@@ -14,6 +14,12 @@ const ctrlDown = document.getElementById('ctrl-down');
 const ctrlLeft = document.getElementById('ctrl-left');
 const ctrlRight = document.getElementById('ctrl-right');
 
+// Asset loading
+const jaehwanImg = new Image();
+jaehwanImg.src = 'jaehwan.png';
+const jihumImg = new Image();
+jihumImg.src = 'jihum.png';
+
 // Game constants
 const GRID_SIZE = 20;
 let TILE_COUNT;
@@ -140,61 +146,46 @@ function draw() {
         ctx.stroke();
     }
 
-    // Draw Food
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = '#ff0055';
-    ctx.fillStyle = '#ff0055';
-    ctx.beginPath();
-    ctx.arc(
-        food.x * GRID_SIZE + GRID_SIZE / 2,
-        food.y * GRID_SIZE + GRID_SIZE / 2,
-        GRID_SIZE / 2.5,
-        0,
-        Math.PI * 2
+    // Draw Ryu Jihum (Food)
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#ffaa00';
+    ctx.drawImage(
+        jihumImg,
+        food.x * GRID_SIZE,
+        food.y * GRID_SIZE,
+        GRID_SIZE,
+        GRID_SIZE
     );
-    ctx.fill();
 
-    // Draw Snake
+    // Draw Lee Jaehwan (Snake)
     snake.forEach((segment, index) => {
         const isHead = index === 0;
-        ctx.shadowBlur = isHead ? 20 : 10;
-        ctx.shadowColor = '#00ff88';
-        ctx.fillStyle = isHead ? '#00ff88' : 'rgba(0, 255, 136, 0.5)';
 
-        const size = isHead ? GRID_SIZE - 2 : GRID_SIZE - 4;
-        const offset = (GRID_SIZE - size) / 2;
-
-        const x = segment.x * GRID_SIZE + offset;
-        const y = segment.y * GRID_SIZE + offset;
-
-        ctx.beginPath();
-        ctx.roundRect(x, y, size, size, isHead ? 6 : 2);
-        ctx.fill();
-
-        // Draw Face on Head
         if (isHead) {
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#050505';
-
-            const eyeSize = 3;
-            // Draw eyes and mouth based on direction
-            if (dx === 1) { // Right
-                ctx.fillRect(x + size - 6, y + 4, eyeSize, eyeSize);
-                ctx.fillRect(x + size - 6, y + size - 7, eyeSize, eyeSize);
-                ctx.fillRect(x + size - 3, y + (size / 2) - 1, 3, 2);
-            } else if (dx === -1) { // Left
-                ctx.fillRect(x + 3, y + 4, eyeSize, eyeSize);
-                ctx.fillRect(x + 3, y + size - 7, eyeSize, eyeSize);
-                ctx.fillRect(x, y + (size / 2) - 1, 3, 2);
-            } else if (dy === -1) { // Up
-                ctx.fillRect(x + 4, y + 3, eyeSize, eyeSize);
-                ctx.fillRect(x + size - 7, y + 3, eyeSize, eyeSize);
-                ctx.fillRect(x + (size / 2) - 4, y, 8, 2);
-            } else if (dy === 1) { // Down
-                ctx.fillRect(x + 4, y + size - 6, eyeSize, eyeSize);
-                ctx.fillRect(x + size - 7, y + size - 6, eyeSize, eyeSize);
-                ctx.fillRect(x + (size / 2) - 4, y + size - 2, 8, 2);
-            }
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#00ff88';
+            ctx.drawImage(
+                jaehwanImg,
+                segment.x * GRID_SIZE,
+                segment.y * GRID_SIZE,
+                GRID_SIZE,
+                GRID_SIZE
+            );
+        } else {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(0, 255, 136, 0.5)';
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.4)';
+            const size = GRID_SIZE - 4;
+            const offset = (GRID_SIZE - size) / 2;
+            ctx.beginPath();
+            ctx.roundRect(
+                segment.x * GRID_SIZE + offset,
+                segment.y * GRID_SIZE + offset,
+                size,
+                size,
+                4
+            );
+            ctx.fill();
         }
     });
 
