@@ -193,19 +193,18 @@ function update() {
         }
     });
 
-    // Incremental Difficulty & Spawning
+    // Incremental Difficulty & Spawning (Every 1 second)
     if (frameCount % 10 === 0) {
-        score++;
-        timeSurvived = Math.floor(score / 10);
+        timeSurvived++;
         scoreElement.textContent = formatTime(timeSurvived);
 
         // Spawn new Jaehwan every 15 seconds
-        if (timeSurvived > 0 && score % 150 === 0 && enemies.length < 5) {
+        if (timeSurvived > 0 && timeSurvived % 15 === 0 && enemies.length < 5) {
             spawnEnemy();
         }
 
         // Spawn items every 8 seconds if sparse
-        if (score % 80 === 0 && items.length < 2) {
+        if (timeSurvived % 8 === 0 && items.length < 2) {
             spawnItem();
         }
     }
