@@ -14,6 +14,11 @@ const ctrlDown = document.getElementById('ctrl-down');
 const ctrlLeft = document.getElementById('ctrl-left');
 const ctrlRight = document.getElementById('ctrl-right');
 
+// Patch Note elements
+const patchNoteBtn = document.getElementById('patch-note-btn');
+const patchModal = document.getElementById('patch-modal');
+const closeModal = document.getElementById('close-modal');
+
 // Asset loading
 const jaehwanImg = new Image();
 jaehwanImg.src = 'jaehwan.png';
@@ -264,6 +269,7 @@ function gameOver() {
     clearInterval(gameLoop);
     finalScoreElement.textContent = formatTime(timeSurvived);
     gameOverScreen.classList.remove('hidden');
+    patchNoteBtn.classList.remove('hidden'); // Show on Game Over
 }
 
 function startGame() {
@@ -271,6 +277,7 @@ function startGame() {
     isPaused = false;
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
+    patchNoteBtn.classList.add('hidden'); // Hide during gameplay
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = setInterval(draw, GAME_SPEED);
 }
@@ -293,11 +300,6 @@ ctrlRight.addEventListener('click', () => { nextDx = 1; nextDy = 0; });
 
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
-
-// Patch Note Modal Logic
-const patchNoteBtn = document.getElementById('patch-note-btn');
-const patchModal = document.getElementById('patch-modal');
-const closeModal = document.getElementById('close-modal');
 
 patchNoteBtn.addEventListener('click', () => {
     patchModal.classList.remove('hidden');
