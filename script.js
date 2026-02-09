@@ -164,25 +164,38 @@ function draw() {
         const size = isHead ? GRID_SIZE - 2 : GRID_SIZE - 4;
         const offset = (GRID_SIZE - size) / 2;
 
+        const x = segment.x * GRID_SIZE + offset;
+        const y = segment.y * GRID_SIZE + offset;
+
         ctx.beginPath();
-        if (isHead) {
-            ctx.roundRect(
-                segment.x * GRID_SIZE + offset,
-                segment.y * GRID_SIZE + offset,
-                size,
-                size,
-                4
-            );
-        } else {
-            ctx.roundRect(
-                segment.x * GRID_SIZE + offset,
-                segment.y * GRID_SIZE + offset,
-                size,
-                size,
-                2
-            );
-        }
+        ctx.roundRect(x, y, size, size, isHead ? 6 : 2);
         ctx.fill();
+
+        // Draw Face on Head
+        if (isHead) {
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#050505';
+
+            const eyeSize = 3;
+            // Draw eyes and mouth based on direction
+            if (dx === 1) { // Right
+                ctx.fillRect(x + size - 6, y + 4, eyeSize, eyeSize);
+                ctx.fillRect(x + size - 6, y + size - 7, eyeSize, eyeSize);
+                ctx.fillRect(x + size - 3, y + (size / 2) - 1, 3, 2);
+            } else if (dx === -1) { // Left
+                ctx.fillRect(x + 3, y + 4, eyeSize, eyeSize);
+                ctx.fillRect(x + 3, y + size - 7, eyeSize, eyeSize);
+                ctx.fillRect(x, y + (size / 2) - 1, 3, 2);
+            } else if (dy === -1) { // Up
+                ctx.fillRect(x + 4, y + 3, eyeSize, eyeSize);
+                ctx.fillRect(x + size - 7, y + 3, eyeSize, eyeSize);
+                ctx.fillRect(x + (size / 2) - 4, y, 8, 2);
+            } else if (dy === 1) { // Down
+                ctx.fillRect(x + 4, y + size - 6, eyeSize, eyeSize);
+                ctx.fillRect(x + size - 7, y + size - 6, eyeSize, eyeSize);
+                ctx.fillRect(x + (size / 2) - 4, y + size - 2, 8, 2);
+            }
+        }
     });
 
     ctx.shadowBlur = 0; // Reset shadow for next draw
