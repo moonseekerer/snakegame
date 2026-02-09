@@ -295,6 +295,25 @@ ctrlRight.addEventListener('click', () => { nextDx = 1; nextDy = 0; });
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 
+// Patch Note Modal Logic
+const patchNoteBtn = document.getElementById('patch-note-btn');
+const patchModal = document.getElementById('patch-modal');
+const closeModal = document.getElementById('close-modal');
+
+patchNoteBtn.addEventListener('click', () => {
+    patchModal.classList.remove('hidden');
+});
+
+closeModal.addEventListener('click', () => {
+    patchModal.classList.add('hidden');
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target === patchModal) {
+        patchModal.classList.add('hidden');
+    }
+});
+
 canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 

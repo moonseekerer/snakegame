@@ -17,6 +17,46 @@
 <body>
     <div class="background-glow"></div>
 
+    <!-- Patch Note Button -->
+    <button id="patch-note-btn" class="corner-btn">📄 PATCH NOTES</button>
+
+    <!-- Patch Note Modal -->
+    <div id="patch-modal" class="modal hidden">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2>PATCH NOTES</h2>
+                <button id="close-modal" class="close-btn">&times;</button>
+            </header>
+            <div class="modal-body">
+                <section class="patch-version">
+                    <h3>v1.3.0 - The Survival Strategy</h3>
+                    <ul>
+                        <li>추격자 증식 시스템: 15초마다 '이재환'이 추가되어 최대 5명까지 늘어납니다.</li>
+                        <li>신규 아이템 ⚡️번개: 5초간 지흠의 이동 성능이 강화됩니다.</li>
+                        <li>신규 아이템 ❄️얼음: 3초간 모든 추격자를 제자리에 얼립니다.</li>
+                        <li>생존 시간 기록 시스템 도입 (00:00 형식).</li>
+                    </ul>
+                </section>
+                <section class="patch-version">
+                    <h3>v1.2.0 - Character Awakening</h3>
+                    <ul>
+                        <li>주인공 교체: 뱀 -> '류지흠'(플레이어), 먹이 -> '이재환'(추격자)으로 변경.</li>
+                        <li>게임 모드 변경: '성장형'에서 '생존형 추격전'으로 전면 개편.</li>
+                        <li>캐릭터 전용 고퀄리티 일러스트 적용.</li>
+                    </ul>
+                </section>
+                <section class="patch-version">
+                    <h3>v1.1.0 - Details & Mobile</h3>
+                    <ul>
+                        <li>모바일 터치 컨트롤러 추가.</li>
+                        <li>스네이크 머리에 방향별 눈과 입 디자인 추가.</li>
+                        <li>UI/UX 개선 및 반응형 웹 최적화.</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <h1 class="glitch-text">JIHUM ESCAPE</h1>
