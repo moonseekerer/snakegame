@@ -19,6 +19,10 @@ const jaehwanImg = new Image();
 jaehwanImg.src = 'jaehwan.png';
 const jihumImg = new Image();
 jihumImg.src = 'jihum.png';
+const speedImg = new Image();
+speedImg.src = 'speed.png';
+const freezeImg = new Image();
+freezeImg.src = 'freeze.png';
 
 // Game constants
 const GRID_SIZE = 20;
@@ -27,7 +31,8 @@ let GAME_SPEED = 100;
 
 // Game state
 let jihum = { x: 5, y: 5 };
-let jaehwan = { x: 15, y: 15 };
+let enemies = [];
+let items = [];
 let dx = 0;
 let dy = 0;
 let nextDx = 0;
@@ -37,8 +42,12 @@ let score = 0;
 let highScore = localStorage.getItem('escapeHighScore') || 0;
 let gameLoop;
 let isPaused = true;
-let enemyMoveCounter = 0;
-let enemyMoveFrequency = 3; // Jaehwan moves every 3 ticks
+let frameCount = 0;
+
+// Power-up states
+let speedBoostActive = false;
+let freezeActive = false;
+let powerUpTimer = 0;
 
 // Initialize
 highScoreElement.textContent = formatTime(highScore);
@@ -55,8 +64,11 @@ function initGame() {
     canvas.height = size;
     TILE_COUNT = Math.floor(size / GRID_SIZE);
 
-    jihum = { x: Math.floor(TILE_COUNT / 4), y: Math.floor(TILE_COUNT / 4) };
-    jaehwan = { x: Math.floor(TILE_COUNT * 3 / 4), y: Math.floor(TILE_COUNT * 3 / 4) };
+    jihum = { x: Math.floor(TILE_COUNT / 2), y: Math.floor(TILE_COUNT / 2) };
+    enemies = [
+        { x: 2, y: 2, moveFrequency: 3, moveCounter: 0 }
+    ];
+    items = [];
 
     dx = 0;
     dy = 0;
@@ -65,55 +77,136 @@ function initGame() {
     score = 0;
     timeSurvived = 0;
     scoreElement.textContent = '00:00';
-    enemyMoveCounter = 0;
-    enemyMoveFrequency = 3;
+    frameCount = 0;
+    speedBoostActive = false;
+    freezeActive = false;
+    powerUpTimer = 0;
+}
+
+function spawnItem() {
+    const type = Math.random() > 0.5 ? 'speed' : 'freeze';
+    const newItem = {
+        x: Math.floor(Math.random() * TILE_COUNT),
+        y: Math.floor(Math.random() * TILE_COUNT),
+        type: type
+    };
+    items.push(newItem);
+}
+
+function spawnEnemy() {
+    // Spawn at a corner furthest from Jihum
+    const corners = [
+        { x: 0, y: 0 },
+        { x: TILE_COUNT - 1, y: 0 },
+        { x: 0, y: TILE_COUNT - 1 },
+        { x: TILE_COUNT - 1, y: TILE_COUNT - 1 }
+    ];
+
+    // Pick the corner with max distance
+    let bestCorner = corners[0];
+    let maxDist = -1;
+
+    corners.forEach(c => {
+        const d = Math.abs(c.x - jihum.x) + Math.abs(c.y - jihum.y);
+        if (d > maxDist) {
+            maxDist = d;
+            bestCorner = c;
+        }
+    });
+
+    enemies.push({
+        x: bestCorner.x,
+        y: bestCorner.y,
+        moveFrequency: Math.max(2, 4 - Math.floor(timeSurvived / 30)),
+        moveCounter: 0
+    });
 }
 
 function update() {
     if (isPaused) return;
+    frameCount++;
 
-    // Update Jihum's direction
+    // Update Player Movement
     dx = nextDx;
     dy = nextDy;
 
-    // Move Jihum
-    jihum.x += dx;
-    jihum.y += dy;
+    // If speed boost, move twice potentially, but let's just make it simpler: skip every other move normally, or move every turn when speedboost
+    let playerMove = true;
+    if (!speedBoostActive && frameCount % 2 === 0) {
+        // Player moves slightly slower than 100% speed to make it challenging
+        // playerMove = false; 
+    }
 
-    // Wall collision for Jihum (Keep him inside or wrap around? Let's stop at walls)
-    if (jihum.x < 0) jihum.x = 0;
-    if (jihum.x >= TILE_COUNT) jihum.x = TILE_COUNT - 1;
-    if (jihum.y < 0) jihum.y = 0;
-    if (jihum.y >= TILE_COUNT) jihum.y = TILE_COUNT - 1;
+    if (playerMove) {
+        jihum.x += dx;
+        jihum.y += dy;
+        // Wall boundaries
+        jihum.x = Math.max(0, Math.min(TILE_COUNT - 1, jihum.x));
+        jihum.y = Math.max(0, Math.min(TILE_COUNT - 1, jihum.y));
+    }
 
-    // Move Jaehwan (AI)
-    enemyMoveCounter++;
-    if (enemyMoveCounter >= enemyMoveFrequency) {
-        enemyMoveCounter = 0;
+    // Power-up depletion
+    if (powerUpTimer > 0) {
+        powerUpTimer--;
+        if (powerUpTimer === 0) {
+            speedBoostActive = false;
+            freezeActive = false;
+        }
+    }
 
-        // Simple Chase AI
-        if (jaehwan.x < jihum.x) jaehwan.x++;
-        else if (jaehwan.x > jihum.x) jaehwan.x--;
+    // Item Collision
+    items = items.filter(item => {
+        if (item.x === jihum.x && item.y === jihum.y) {
+            if (item.type === 'speed') {
+                speedBoostActive = true;
+                freezeActive = false;
+                powerUpTimer = 50; // 5 seconds
+            } else {
+                freezeActive = true;
+                speedBoostActive = false;
+                powerUpTimer = 30; // 3 seconds
+            }
+            return false;
+        }
+        return true;
+    });
 
-        if (jaehwan.y < jihum.y) jaehwan.y++;
-        else if (jaehwan.y > jihum.y) jaehwan.y--;
+    // Enemy AI & Collision
+    if (!freezeActive) {
+        enemies.forEach(enemy => {
+            enemy.moveCounter++;
+            if (enemy.moveCounter >= enemy.moveFrequency) {
+                enemy.moveCounter = 0;
+                if (enemy.x < jihum.x) enemy.x++;
+                else if (enemy.x > jihum.x) enemy.x--;
+
+                if (enemy.y < jihum.y) enemy.y++;
+                else if (enemy.y > jihum.y) enemy.y--;
+            }
+        });
     }
 
     // Capture Check
-    if (jaehwan.x === jihum.x && jaehwan.y === jihum.y) {
-        gameOver();
-        return;
-    }
+    enemies.forEach(enemy => {
+        if (enemy.x === jihum.x && enemy.y === jihum.y) {
+            gameOver();
+        }
+    });
 
-    // Update Score (Survival Time)
-    score++;
-    if (score % 10 === 0) { // Every second (assuming 100ms speed)
+    // Incremental Difficulty & Spawning
+    if (frameCount % 10 === 0) {
+        score++;
         timeSurvived = Math.floor(score / 10);
         scoreElement.textContent = formatTime(timeSurvived);
 
-        // Difficulty increase: Jaehwan gets faster over time
-        if (timeSurvived > 0 && timeSurvived % 10 === 0 && enemyMoveFrequency > 1) {
-            // Every 10 seconds, potentially increase speed (handled carefully)
+        // Spawn new Jaehwan every 15 seconds
+        if (timeSurvived > 0 && score % 150 === 0 && enemies.length < 5) {
+            spawnEnemy();
+        }
+
+        // Spawn items every 8 seconds if sparse
+        if (score % 80 === 0 && items.length < 2) {
+            spawnItem();
         }
     }
 
@@ -128,27 +221,43 @@ function draw() {
     update();
     if (isPaused) return;
 
-    // Clear canvas
     ctx.fillStyle = '#050505';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Grid
+    // Grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-    ctx.lineWidth = 1;
     for (let i = 0; i <= TILE_COUNT; i++) {
         ctx.beginPath(); ctx.moveTo(i * GRID_SIZE, 0); ctx.lineTo(i * GRID_SIZE, canvas.height); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i * GRID_SIZE); ctx.lineTo(canvas.width, i * GRID_SIZE); ctx.stroke();
     }
 
-    // Draw Jaehwan (Enemy)
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = '#ff0055';
-    ctx.drawImage(jaehwanImg, jaehwan.x * GRID_SIZE, jaehwan.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+    // Draw Items
+    items.forEach(item => {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = item.type === 'speed' ? '#00ffff' : '#00aaff';
+        ctx.drawImage(item.type === 'speed' ? speedImg : freezeImg, item.x * GRID_SIZE, item.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+    });
 
-    // Draw Jihum (Player)
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#00ff88';
+    // Draw Enemies (Jaehwans)
+    enemies.forEach(enemy => {
+        ctx.shadowBlur = freezeActive ? 5 : 25;
+        ctx.shadowColor = freezeActive ? '#00aaff' : '#ff0055';
+        if (freezeActive) ctx.globalAlpha = 0.6;
+        ctx.drawImage(jaehwanImg, enemy.x * GRID_SIZE, enemy.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+        ctx.globalAlpha = 1.0;
+    });
+
+    // Draw Player (Jihum)
+    ctx.shadowBlur = speedBoostActive ? 35 : 20;
+    ctx.shadowColor = speedBoostActive ? '#ffff00' : '#00ff88';
     ctx.drawImage(jihumImg, jihum.x * GRID_SIZE, jihum.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+
+    // Power-up visual indicator
+    if (powerUpTimer > 0) {
+        ctx.strokeStyle = speedBoostActive ? '#ffff00' : '#00aaff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(jihum.x * GRID_SIZE - 2, jihum.y * GRID_SIZE - 2, GRID_SIZE + 4, GRID_SIZE + 4);
+    }
 }
 
 function gameOver() {
@@ -183,11 +292,11 @@ ctrlDown.addEventListener('click', () => { nextDx = 0; nextDy = 1; });
 ctrlLeft.addEventListener('click', () => { nextDx = -1; nextDy = 0; });
 ctrlRight.addEventListener('click', () => { nextDx = 1; nextDy = 0; });
 
-canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
+
+canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
 window.addEventListener('resize', () => {
     const size = canvas.parentElement.clientWidth;
