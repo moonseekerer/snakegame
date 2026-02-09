@@ -186,6 +186,9 @@ ctrlRight.addEventListener('click', () => { nextDx = 1; nextDy = 0; });
 canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
+
 window.addEventListener('resize', () => {
     const size = canvas.parentElement.clientWidth;
     canvas.width = size;
