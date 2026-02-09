@@ -26,101 +26,101 @@ let TILE_COUNT;
 let GAME_SPEED = 100;
 
 // Game state
-let snake = [];
-let food = { x: 5, y: 5 };
+let jihum = { x: 5, y: 5 };
+let jaehwan = { x: 15, y: 15 };
 let dx = 0;
 let dy = 0;
 let nextDx = 0;
 let nextDy = 0;
+let timeSurvived = 0;
 let score = 0;
-let highScore = localStorage.getItem('snakeHighScore') || 0;
+let highScore = localStorage.getItem('escapeHighScore') || 0;
 let gameLoop;
 let isPaused = true;
+let enemyMoveCounter = 0;
+let enemyMoveFrequency = 3; // Jaehwan moves every 3 ticks
 
 // Initialize
-highScoreElement.textContent = highScore.toString().padStart(3, '0');
+highScoreElement.textContent = formatTime(highScore);
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
 
 function initGame() {
-    // Set canvas size based on container
     const size = canvas.parentElement.clientWidth;
     canvas.width = size;
     canvas.height = size;
     TILE_COUNT = Math.floor(size / GRID_SIZE);
 
-    snake = [
-        { x: 10, y: 10 },
-        { x: 10, y: 11 },
-        { x: 10, y: 12 }
-    ];
+    jihum = { x: Math.floor(TILE_COUNT / 4), y: Math.floor(TILE_COUNT / 4) };
+    jaehwan = { x: Math.floor(TILE_COUNT * 3 / 4), y: Math.floor(TILE_COUNT * 3 / 4) };
 
     dx = 0;
-    dy = -1;
+    dy = 0;
     nextDx = 0;
-    nextDy = -1;
+    nextDy = 0;
     score = 0;
-    scoreElement.textContent = '000';
-    GAME_SPEED = 100;
-
-    createFood();
-}
-
-function createFood() {
-    food = {
-        x: Math.floor(Math.random() * TILE_COUNT),
-        y: Math.floor(Math.random() * TILE_COUNT)
-    };
-
-    // Check if food is on snake
-    snake.forEach(segment => {
-        if (segment.x === food.x && segment.y === food.y) {
-            createFood();
-        }
-    });
+    timeSurvived = 0;
+    scoreElement.textContent = '00:00';
+    enemyMoveCounter = 0;
+    enemyMoveFrequency = 3;
 }
 
 function update() {
     if (isPaused) return;
 
-    // Update direction
+    // Update Jihum's direction
     dx = nextDx;
     dy = nextDy;
 
-    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+    // Move Jihum
+    jihum.x += dx;
+    jihum.y += dy;
 
-    // Wall collision
-    if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
+    // Wall collision for Jihum (Keep him inside or wrap around? Let's stop at walls)
+    if (jihum.x < 0) jihum.x = 0;
+    if (jihum.x >= TILE_COUNT) jihum.x = TILE_COUNT - 1;
+    if (jihum.y < 0) jihum.y = 0;
+    if (jihum.y >= TILE_COUNT) jihum.y = TILE_COUNT - 1;
+
+    // Move Jaehwan (AI)
+    enemyMoveCounter++;
+    if (enemyMoveCounter >= enemyMoveFrequency) {
+        enemyMoveCounter = 0;
+
+        // Simple Chase AI
+        if (jaehwan.x < jihum.x) jaehwan.x++;
+        else if (jaehwan.x > jihum.x) jaehwan.x--;
+
+        if (jaehwan.y < jihum.y) jaehwan.y++;
+        else if (jaehwan.y > jihum.y) jaehwan.y--;
+    }
+
+    // Capture Check
+    if (jaehwan.x === jihum.x && jaehwan.y === jihum.y) {
         gameOver();
         return;
     }
 
-    // Self collision
-    for (let i = 0; i < snake.length; i++) {
-        if (snake[i].x === head.x && snake[i].y === head.y) {
-            gameOver();
-            return;
+    // Update Score (Survival Time)
+    score++;
+    if (score % 10 === 0) { // Every second (assuming 100ms speed)
+        timeSurvived = Math.floor(score / 10);
+        scoreElement.textContent = formatTime(timeSurvived);
+
+        // Difficulty increase: Jaehwan gets faster over time
+        if (timeSurvived > 0 && timeSurvived % 10 === 0 && enemyMoveFrequency > 1) {
+            // Every 10 seconds, potentially increase speed (handled carefully)
         }
     }
 
-    snake.unshift(head);
-
-    // Food collision
-    if (head.x === food.x && head.y === food.y) {
-        score += 10;
-        scoreElement.textContent = score.toString().padStart(3, '0');
-        if (score > highScore) {
-            highScore = score;
-            highScoreElement.textContent = highScore.toString().padStart(3, '0');
-            localStorage.setItem('snakeHighScore', highScore);
-        }
-        createFood();
-        // Slightly increase speed
-        if (GAME_SPEED > 50) {
-            clearInterval(gameLoop);
-            GAME_SPEED -= 1;
-            gameLoop = setInterval(draw, GAME_SPEED);
-        }
-    } else {
-        snake.pop();
+    if (timeSurvived > highScore) {
+        highScore = timeSurvived;
+        highScoreElement.textContent = formatTime(highScore);
+        localStorage.setItem('escapeHighScore', highScore);
     }
 }
 
@@ -132,70 +132,29 @@ function draw() {
     ctx.fillStyle = '#050505';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Grid (Subtle)
+    // Draw Grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= TILE_COUNT; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * GRID_SIZE, 0);
-        ctx.lineTo(i * GRID_SIZE, canvas.height);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i * GRID_SIZE);
-        ctx.lineTo(canvas.width, i * GRID_SIZE);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i * GRID_SIZE, 0); ctx.lineTo(i * GRID_SIZE, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * GRID_SIZE); ctx.lineTo(canvas.width, i * GRID_SIZE); ctx.stroke();
     }
 
-    // Draw Ryu Jihum (Food)
+    // Draw Jaehwan (Enemy)
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = '#ff0055';
+    ctx.drawImage(jaehwanImg, jaehwan.x * GRID_SIZE, jaehwan.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+
+    // Draw Jihum (Player)
     ctx.shadowBlur = 20;
-    ctx.shadowColor = '#ffaa00';
-    ctx.drawImage(
-        jihumImg,
-        food.x * GRID_SIZE,
-        food.y * GRID_SIZE,
-        GRID_SIZE,
-        GRID_SIZE
-    );
-
-    // Draw Lee Jaehwan (Snake)
-    snake.forEach((segment, index) => {
-        const isHead = index === 0;
-
-        if (isHead) {
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = '#00ff88';
-            ctx.drawImage(
-                jaehwanImg,
-                segment.x * GRID_SIZE,
-                segment.y * GRID_SIZE,
-                GRID_SIZE,
-                GRID_SIZE
-            );
-        } else {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'rgba(0, 255, 136, 0.5)';
-            ctx.fillStyle = 'rgba(0, 255, 136, 0.4)';
-            const size = GRID_SIZE - 4;
-            const offset = (GRID_SIZE - size) / 2;
-            ctx.beginPath();
-            ctx.roundRect(
-                segment.x * GRID_SIZE + offset,
-                segment.y * GRID_SIZE + offset,
-                size,
-                size,
-                4
-            );
-            ctx.fill();
-        }
-    });
-
-    ctx.shadowBlur = 0; // Reset shadow for next draw
+    ctx.shadowColor = '#00ff88';
+    ctx.drawImage(jihumImg, jihum.x * GRID_SIZE, jihum.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
 }
 
 function gameOver() {
     isPaused = true;
     clearInterval(gameLoop);
-    finalScoreElement.textContent = score;
+    finalScoreElement.textContent = formatTime(timeSurvived);
     gameOverScreen.classList.remove('hidden');
 }
 
@@ -211,39 +170,22 @@ function startGame() {
 // Controls
 window.addEventListener('keydown', e => {
     switch (e.key.toLowerCase()) {
-        case 'arrowup':
-        case 'w':
-            if (dy !== 1) { nextDx = 0; nextDy = -1; }
-            break;
-        case 'arrowdown':
-        case 's':
-            if (dy !== -1) { nextDx = 0; nextDy = 1; }
-            break;
-        case 'arrowleft':
-        case 'a':
-            if (dx !== 1) { nextDx = -1; nextDy = 0; }
-            break;
-        case 'arrowright':
-        case 'd':
-            if (dx !== -1) { nextDx = 1; nextDy = 0; }
-            break;
+        case 'arrowup': case 'w': nextDx = 0; nextDy = -1; break;
+        case 'arrowdown': case 's': nextDx = 0; nextDy = 1; break;
+        case 'arrowleft': case 'a': nextDx = -1; nextDy = 0; break;
+        case 'arrowright': case 'd': nextDx = 1; nextDy = 0; break;
     }
 });
 
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
+// Mobile Controls
+ctrlUp.addEventListener('click', () => { nextDx = 0; nextDy = -1; });
+ctrlDown.addEventListener('click', () => { nextDx = 0; nextDy = 1; });
+ctrlLeft.addEventListener('click', () => { nextDx = -1; nextDy = 0; });
+ctrlRight.addEventListener('click', () => { nextDx = 1; nextDy = 0; });
 
-// Mobile Button Listeners
-ctrlUp.addEventListener('click', () => { if (dy !== 1) { nextDx = 0; nextDy = -1; } });
-ctrlDown.addEventListener('click', () => { if (dy !== -1) { nextDx = 0; nextDy = 1; } });
-ctrlLeft.addEventListener('click', () => { if (dx !== 1) { nextDx = -1; nextDy = 0; } });
-ctrlRight.addEventListener('click', () => { if (dx !== -1) { nextDx = 1; nextDy = 0; } });
-
-// Touch event support to prevent scrolling while playing on mobile
 canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-// Initial size adjustment
 window.addEventListener('resize', () => {
     const size = canvas.parentElement.clientWidth;
     canvas.width = size;
@@ -251,9 +193,7 @@ window.addEventListener('resize', () => {
     TILE_COUNT = Math.floor(size / GRID_SIZE);
 });
 
-// Start by initializing UI but don't start loop
 initGame();
-// Draw one frame to show background/food on start screen
 isPaused = false;
 draw();
 isPaused = true;
