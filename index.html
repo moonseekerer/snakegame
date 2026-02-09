@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Snake | Ultimate Grid Survival</title>
+    <meta name="description" content="고퀄리티 그래픽과 부드러운 컨트롤의 네온 스네이크 게임을 즐겨보세요.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-glow"></div>
+
+    <div class="container">
+        <header>
+            <h1 class="glitch-text">NEON SNAKE</h1>
+            <div class="score-container">
+                <div class="score-box">
+                    <span class="label">SCORE</span>
+                    <span id="score" class="value">000</span>
+                </div>
+                <div class="score-box">
+                    <span class="label">BEST</span>
+                    <span id="highScore" class="value">000</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="game-wrapper">
+            <div id="game-container">
+                <canvas id="gameCanvas"></canvas>
+
+                <div id="start-screen" class="overlay">
+                    <div class="overlay-content">
+                        <h2>READY?</h2>
+                        <p>Use Arrows, WASD or On-screen controls</p>
+                        <button id="start-btn" class="primary-btn">START MISSION</button>
+                    </div>
+                </div>
+
+                <div id="game-over-screen" class="overlay hidden">
+                    <div class="overlay-content">
+                        <h2 class="danger-text">CRASHED</h2>
+                        <p>Final Score: <span id="final-score">0</span></p>
+                        <button id="restart-btn" class="primary-btn">RETRY</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <div class="ctrl-row">
+                <button class="ctrl-btn" id="ctrl-up">↑</button>
+            </div>
+            <div class="ctrl-row">
+                <button class="ctrl-btn" id="ctrl-left">←</button>
+                <button class="ctrl-btn" id="ctrl-down">↓</button>
+                <button class="ctrl-btn" id="ctrl-right">→</button>
+            </div>
+        </div>
+
+        <footer>
+            <div class="controls-hint">
+                <span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> or
+                    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
