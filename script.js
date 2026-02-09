@@ -28,6 +28,8 @@ const speedImg = new Image();
 speedImg.src = 'speed.png';
 const freezeImg = new Image();
 freezeImg.src = 'freeze.png';
+const shinhyeongImg = new Image();
+shinhyeongImg.src = 'shinhyeong.png';
 
 // Game constants
 const GRID_SIZE = 20;
@@ -53,6 +55,7 @@ let frameCount = 0;
 let speedBoostActive = false;
 let freezeActive = false;
 let powerUpTimer = 0;
+let dragonBreathActive = 0; // Timer for visual effect
 
 // Initialize
 highScoreElement.textContent = formatTime(highScore);
@@ -86,10 +89,16 @@ function initGame() {
     speedBoostActive = false;
     freezeActive = false;
     powerUpTimer = 0;
+    dragonBreathActive = 0;
 }
 
 function spawnItem() {
-    const type = Math.random() > 0.5 ? 'speed' : 'freeze';
+    const r = Math.random();
+    let type;
+    if (r < 0.15) type = 'shinhyeong'; // Rare legendary item
+    else if (r < 0.55) type = 'speed';
+    else type = 'freeze';
+
     const newItem = {
         x: Math.floor(Math.random() * TILE_COUNT),
         y: Math.floor(Math.random() * TILE_COUNT),
@@ -99,7 +108,6 @@ function spawnItem() {
 }
 
 function spawnEnemy() {
-    // Spawn at a corner furthest from Jihum
     const corners = [
         { x: 0, y: 0 },
         { x: TILE_COUNT - 1, y: 0 },
@@ -107,7 +115,6 @@ function spawnEnemy() {
         { x: TILE_COUNT - 1, y: TILE_COUNT - 1 }
     ];
 
-    // Pick the corner with max distance
     let bestCorner = corners[0];
     let maxDist = -1;
 
@@ -131,24 +138,17 @@ function update() {
     if (isPaused) return;
     frameCount++;
 
+    // Effect depletion
+    if (dragonBreathActive > 0) dragonBreathActive--;
+
     // Update Player Movement
     dx = nextDx;
     dy = nextDy;
 
-    // If speed boost, move twice potentially, but let's just make it simpler: skip every other move normally, or move every turn when speedboost
-    let playerMove = true;
-    if (!speedBoostActive && frameCount % 2 === 0) {
-        // Player moves slightly slower than 100% speed to make it challenging
-        // playerMove = false; 
-    }
-
-    if (playerMove) {
-        jihum.x += dx;
-        jihum.y += dy;
-        // Wall boundaries
-        jihum.x = Math.max(0, Math.min(TILE_COUNT - 1, jihum.x));
-        jihum.y = Math.max(0, Math.min(TILE_COUNT - 1, jihum.y));
-    }
+    jihum.x += dx;
+    jihum.y += dy;
+    jihum.x = Math.max(0, Math.min(TILE_COUNT - 1, jihum.x));
+    jihum.y = Math.max(0, Math.min(TILE_COUNT - 1, jihum.y));
 
     // Power-up depletion
     if (powerUpTimer > 0) {
@@ -162,14 +162,17 @@ function update() {
     // Item Collision
     items = items.filter(item => {
         if (item.x === jihum.x && item.y === jihum.y) {
-            if (item.type === 'speed') {
+            if (item.type === 'shinhyeong') {
+                enemies = []; // REMOVE ALL JAEHWANS
+                dragonBreathActive = 15; // Visual flash
+            } else if (item.type === 'speed') {
                 speedBoostActive = true;
                 freezeActive = false;
-                powerUpTimer = 50; // 5 seconds
+                powerUpTimer = 50;
             } else {
                 freezeActive = true;
                 speedBoostActive = false;
-                powerUpTimer = 30; // 3 seconds
+                powerUpTimer = 30;
             }
             return false;
         }
@@ -180,7 +183,10 @@ function update() {
     if (!freezeActive) {
         enemies.forEach(enemy => {
             enemy.moveCounter++;
-            if (enemy.moveCounter >= enemy.moveFrequency) {
+            let currentFreq = enemy.moveFrequency;
+            if (speedBoostActive) currentFreq = enemy.moveFrequency + 1; // Jaehwan feels slower relative to player
+
+            if (enemy.moveCounter >= currentFreq) {
                 enemy.moveCounter = 0;
                 if (enemy.x < jihum.x) enemy.x++;
                 else if (enemy.x > jihum.x) enemy.x--;
@@ -203,13 +209,11 @@ function update() {
         timeSurvived++;
         scoreElement.textContent = formatTime(timeSurvived);
 
-        // Spawn new Jaehwan every 15 seconds
-        if (timeSurvived > 0 && timeSurvived % 15 === 0 && enemies.length < 5) {
+        if (timeSurvived > 0 && timeSurvived % 15 === 0 && enemies.length < 8) {
             spawnEnemy();
         }
 
-        // Spawn items every 8 seconds if sparse
-        if (timeSurvived % 8 === 0 && items.length < 2) {
+        if (timeSurvived % 8 === 0 && items.length < 3) {
             spawnItem();
         }
     }
@@ -225,8 +229,14 @@ function draw() {
     update();
     if (isPaused) return;
 
-    ctx.fillStyle = '#050505';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Dragon Breath Flash
+    if (dragonBreathActive > 0) {
+        ctx.fillStyle = `rgba(255, 100, 0, ${dragonBreathActive / 15})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else {
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     // Grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
@@ -238,8 +248,17 @@ function draw() {
     // Draw Items
     items.forEach(item => {
         ctx.shadowBlur = 15;
-        ctx.shadowColor = item.type === 'speed' ? '#00ffff' : '#00aaff';
-        ctx.drawImage(item.type === 'speed' ? speedImg : freezeImg, item.x * GRID_SIZE, item.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+        let img = speedImg;
+        if (item.type === 'freeze') {
+            ctx.shadowColor = '#00aaff';
+            img = freezeImg;
+        } else if (item.type === 'shinhyeong') {
+            ctx.shadowColor = '#ff4400';
+            img = shinhyeongImg;
+        } else {
+            ctx.shadowColor = '#00ffff';
+        }
+        ctx.drawImage(img, item.x * GRID_SIZE, item.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
     });
 
     // Draw Enemies (Jaehwans)
@@ -256,7 +275,6 @@ function draw() {
     ctx.shadowColor = speedBoostActive ? '#ffff00' : '#00ff88';
     ctx.drawImage(jihumImg, jihum.x * GRID_SIZE, jihum.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
 
-    // Power-up visual indicator
     if (powerUpTimer > 0) {
         ctx.strokeStyle = speedBoostActive ? '#ffff00' : '#00aaff';
         ctx.lineWidth = 2;
@@ -269,7 +287,7 @@ function gameOver() {
     clearInterval(gameLoop);
     finalScoreElement.textContent = formatTime(timeSurvived);
     gameOverScreen.classList.remove('hidden');
-    patchNoteBtn.classList.remove('hidden'); // Show on Game Over
+    patchNoteBtn.classList.remove('hidden');
 }
 
 function startGame() {
@@ -277,7 +295,7 @@ function startGame() {
     isPaused = false;
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
-    patchNoteBtn.classList.add('hidden'); // Hide during gameplay
+    patchNoteBtn.classList.add('hidden');
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = setInterval(draw, GAME_SPEED);
 }
